@@ -18,7 +18,7 @@ class Car{
         this->model = model;
         this->price = price;
         this->isAvailable = isAvailable;
-    }
+    }   
     string getBrand()const{
         return brand;
     }
@@ -36,8 +36,9 @@ class Car{
         isAvailable = newStatus;
     }
     void display()const{
-        cout << "Model: " << model << "\nBrand: " << brand
-             << "\nPrice per day: Rp" << price << "\nAvailable: " << (isAvailable? "Yes" : "No") << endl; 
+        cout << "----------------------------------------" << endl;
+        cout <<  brand << " " << model
+             << "\nPrice per day: Rp" << price << endl; 
     }
 };
 #endif
