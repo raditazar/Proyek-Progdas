@@ -1,5 +1,7 @@
-radit, 123
-azhar, 321
-tes, tes
-tes2, tes2
-halo, halo
+radit, 123, Civic for 2 days.|Supra for 3 days.|Supra for 3 days.
+azhar, 321, Avanza for 5 days.|Civic for 3 days.|Avanza for 3 days.|Civic for 3 days.
+tes, tes, None, None
+tes2, tes2, None, None
+halo, halo, None, None
+coba, 123, None, None
+coba2, coba2, None

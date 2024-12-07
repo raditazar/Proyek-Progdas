@@ -1,4 +1,3 @@
 Raditya, radit123, 1
 Arimbi, admin2, 1
 Yuki, admin3, 1
-tes, 123, 0
