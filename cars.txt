@@ -1,0 +1,3 @@
+Honda, Civic, 500, 0
+Toyota, Avanza, 280, 0
+Toyota, Supra, 1000, 0

@@ -4,6 +4,8 @@
 #include "Car.h"
 #include "Customer.h"
 #include "Admin.h"
+#include "Invoice.h"
+#include "Payment.h"
 
 #include <iostream>
 #include <string>
@@ -81,9 +83,9 @@ class Rental{
     void initializeCars() {
         if (cars.empty()) {
             cars = {
-                Car("Honda", "Civic", 500, true),
-                Car("Toyota", "Avanza", 280, true),
-                Car("Toyota", "Supra", 1000, true)
+                Car("Honda", "Civic", 35, true),
+                Car("Toyota", "Avanza", 15, true),
+                Car("Toyota", "Supra", 50, true)
             };
         }
     }
@@ -114,10 +116,7 @@ class Rental{
         cin >> isSuperAdmin;
         bool isSuper = (isSuperAdmin == 'y' || isSuperAdmin == 'Y');
         admins.push_back(Admin(username, password, isSuper));
-
-        // Simpan data admin
         saveAdminData();
-
         cout << "Add new admin successfully." << endl;
 
     }
@@ -136,12 +135,10 @@ class Rental{
             return;
         }
         viewAllAdmins();
-
         if (admins.size() <= 1) {
             cout << "Tidak dapat menghapus admin. Minimal harus ada satu admin." << endl;
             return;
         }
-
         int choice;
         cout << "Masukkan nomor admin yang akan dihapus: ";
         cin  >> choice;
@@ -156,10 +153,7 @@ class Rental{
             return;
         }
         admins.erase(admins.begin() + (choice - 1));
-    
-        // Simpan perubahan data admin
         saveAdminData();
-    
         cout << "Admin berhasil dihapus." << endl;
     }
     void confirmReturnCar(){
@@ -215,19 +209,16 @@ class Rental{
                     addNewAdmin();
                     break;
                 case 3:
-                    viewAllAdmins();
                     deleteAdmin();
                     break;
                 case 4:
                     confirmReturnCar();
                     break;
-                    
             }
         }while(choice!= 5);
         
     }
 
-    
     void signUp(){
         string username, password;
         bool isExist;
@@ -312,9 +303,15 @@ class Rental{
     bool bookCar(Customer& customer, const string& model, int days){
         for(auto& car : cars){
             if(car.getModel() == model && car.getAvailability() == true){
+                Car* selected = &car;
+                Invoice invoice(&customer, &car, days);
+                invoice.choosePayment();
                 car.setAvailability(false);
                 string details = model + " for " + to_string(days) + " days.";
                 customer.addBooking(details);
+                invoice.printInvoice();
+    
+                saveData();
                 return true;
             }
         }
@@ -377,39 +374,106 @@ class Rental{
         } while (true);
     }
 
-    void saveData(){
-        ofstream file("data.txt");
-        if(file.is_open()){
-            for(const auto& customer : customers){
-                file << customer.getUsername() << ", " << customer.getPassword() << endl;
+    void saveData() {
+    ofstream file("data.txt");
+    if(file.is_open()) {
+        for(const auto& customer : customers) {
+            file << customer.getUsername() << ", " 
+                 << customer.getPassword() << ", ";
+            
+            const auto& bookings = customer.getBookings();
+            if(bookings.empty()) {
+                file << "None";
+            } else {
+                for(size_t i = 0; i < bookings.size(); ++i) {
+                    file << bookings[i];
+                    if(i < bookings.size() - 1) {
+                        file << "|";
+                    }
+                }
             }
-            file.close();
-        }
-    }
-
-    void loadData(){
-        ifstream file("data.txt");
-        if(!file) return;
-        
-        string line;
-        while(getline(file, line)){
-            istringstream ss(line);
-            string username, password;
-            
-            getline(ss, username, ',');
-            username.erase(0, username.find_first_not_of(" "));
-            username.erase(username.find_last_not_of(" ") + 1);
-            
-            getline(ss, password);
-            password.erase(0, password.find_first_not_of(" "));
-            password.erase(password.find_last_not_of(" ") + 1);
-            
-            if(!username.empty() && !password.empty()){
-                customers.push_back(Customer(username, password));    
-            }
+            file << endl;
         }
         file.close();
     }
+
+    ofstream carData("cars.txt");
+    if(carData.is_open()) {
+        for(const auto& car : cars) {
+            carData << car.getBrand() << ", "
+                    << car.getModel() << ", "
+                    << car.getPrice() << ", "
+                    << (car.getAvailability() ? "1" : "0") << endl;
+        }
+        carData.close();
+    }
+}
+
+    void loadData() {
+    ifstream file("data.txt");
+    if(!file) return;
+    customers.clear();
+    string line;
+    while(getline(file, line)) {
+        istringstream ss(line);
+        string username, password, bookingsStr;
+        
+        getline(ss, username, ',');
+        username.erase(0, username.find_first_not_of(" "));
+        username.erase(username.find_last_not_of(" ") + 1);
+        
+        getline(ss, password, ',');
+        password.erase(0, password.find_first_not_of(" "));
+        password.erase(password.find_last_not_of(" ") + 1);
+        
+        getline(ss, bookingsStr);
+        bookingsStr.erase(0, bookingsStr.find_first_not_of(" "));
+        bookingsStr.erase(bookingsStr.find_last_not_of(" ") + 1);
+
+        Customer newCustomer(username, password);
+
+        if(bookingsStr != "None") {
+            istringstream bookingSs(bookingsStr);
+            string booking;
+            while(getline(bookingSs, booking, '|')) {
+                newCustomer.addBooking(booking);
+            }
+        }
+
+        if(!username.empty() && !password.empty()) {
+            customers.push_back(newCustomer);    
+        }
+    }
+    file.close();
+
+    ifstream carFile("cars.txt");
+    if(!carFile) {
+        initializeCars();
+        return;
+    }
+    cars.clear();
+    while (getline(carFile, line)) {
+        istringstream ss(line);
+        string brand, model, priceStr, availabilityStr;
+        
+        getline(ss, brand, ',');
+        getline(ss, model, ',');
+        getline(ss, priceStr, ',');
+        getline(ss, availabilityStr);
+    
+        brand.erase(0, brand.find_first_not_of(" "));
+        brand.erase(brand.find_last_not_of(" ") + 1);
+    
+        model.erase(0, model.find_first_not_of(" "));
+        model.erase(model.find_last_not_of(" ") + 1);
+    
+        double price = stod(priceStr);
+        bool isAvailable = (availabilityStr == " 1");
+    
+        cars.push_back(Car(brand, model, price, isAvailable));
+    }
+    carFile.close();
+}
 };
 
 #endif

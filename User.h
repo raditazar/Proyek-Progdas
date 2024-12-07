@@ -19,8 +19,8 @@ class User{
         return password;
     }
     
-    void changePassword(const string& newPass){
-        password = newPass;
+    // void changePassword(const string& newPass){
+    //     password = newPass;
     }
     private:
     string username;
